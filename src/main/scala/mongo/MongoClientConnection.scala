@@ -5,7 +5,7 @@ import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.{MongoClient, MongoCollection}
 
 
-class MongoClientConnection {
+object MongoClientConnection {
 
    private val mongoClient = MongoClient("mongodb://localhost:27017")
    private val productDatabase = mongoClient.getDatabase("look-and-like")
@@ -21,5 +21,6 @@ class MongoClientConnection {
          })
    }
 
+   def findAll() = collection.find()
 
 }

@@ -1,23 +1,43 @@
-import java.util
 
-import image.ImageProcessor
+import akka.actor.ActorSystem
+import image.{ImageCoder, ImageProcessor}
+import mongo.MongoClientConnection
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.opencv.core._
 import org.opencv.imgcodecs.Imgcodecs
+import web.{ImageDownloader, ImageUploader}
 
 object Main {
 
    def main(args: Array[String]): Unit = {
+      println("Creating actor system")
+      val actorSystem = ActorSystem("iot-system")
       loadOpenCV_Lib()
 
-      val t1 = System.currentTimeMillis()
+      val imageProcessorActor = actorSystem.actorOf(ImageProcessor.props(),"image-processor-actor")
+      val uploaderActor = actorSystem.actorOf(ImageUploader.props(),"uploader-actor")
+      val imageCoderActor = actorSystem.actorOf(
+         ImageCoder.props(imageProcessorActor, uploaderActor),
+         "image-coder-actor"
+      )
+      val downloaderActor = actorSystem.actorOf(ImageDownloader.props(imageCoderActor),"downloader-actor")
+
       val src = Imgcodecs.imread("C:\\pashaborisyk\\projects\\Scala\\look-and-like-scissors\\7647851420_6_1_1.jpg")
-      val result = new Mat()
-      ImageProcessor.processFilter(src, result)
+
+      MongoClientConnection.findAll().subscribe((document: Document) => {
+         downloaderActor ! ImageDownloader.DownloadImage(document)
+      }, (error: Throwable) => {
+
+      })
+
+      //
+      downloaderActor ! ImageDownloader.DownloadImage(Document("""{"shopName":"zara"}"""))
+      //
 
       //      val result = getGradient2(src)
       //      Imgcodecs.imwrite("./save.png", result)
+      println("Actor system created and started")
    }
-
 
 
    @throws[Exception]

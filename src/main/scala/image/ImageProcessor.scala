@@ -2,19 +2,33 @@ package image
 
 import java.util
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging, Props}
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.opencv.core._
 import org.opencv.imgproc.Imgproc
 
-class ImageProcessor extends Actor {
+object ImageProcessor {
+
+   def props() = Props(new ImageProcessor)
+
+   final case class ProcessFilter(documentWithMat: (Document, Mat))
+
+}
+
+class ImageProcessor() extends Actor with ActorLogging {
 
    private final val FLOOD_FILL_RELATIVE_SEED_POINT = 0.01
    private final val FLOOD_FILL_TOLERANCE = 13
    private final val BLUR_FACTOR = 5
 
-   def processFilter(src: Mat, dst: Mat): Unit = {
+   override def receive: Receive = {
+      case ImageProcessor.ProcessFilter((document, mat)) =>
+         sender() ! ImageCoder.EncodeImage(document -> processFilter(mat))
+      case _ => throw new RuntimeException("Unknown type of operation")
+   }
 
-      val mat = new MatOfByte()
+   private def processFilter(src: Mat): Mat = {
+      log.info("Starting image processing")
       val alphaMask = getGradient(src)
       //      performMorphologyEx(alphaMask, Imgproc.MORPH_DILATE, 1)
       Imgproc.floodFill(
@@ -39,7 +53,10 @@ class ImageProcessor extends Actor {
       if (BLUR_FACTOR > 0)
          Imgproc.GaussianBlur(alphaMask, alphaMask, new Size(BLUR_FACTOR, BLUR_FACTOR), BLUR_FACTOR)
 
+      val dst = new Mat()
       addAlphaChannel(src, dst, alphaMask)
+      log.info("Image processing finished")
+      dst
    }
 
    private def getGradient(src: Mat): Mat = {
@@ -121,7 +138,4 @@ class ImageProcessor extends Actor {
       Imgproc.morphologyEx(alphaMask, alphaMask, operation, se, new Point(0, 0), iterations)
    }
 
-   override def receive:Receive = {
-      case _ =>
-   }
 }

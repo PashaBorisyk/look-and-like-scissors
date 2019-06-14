@@ -1,16 +1,12 @@
 package web
 
 import java.net.URL
-import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import image.ImageCoder
 import org.mongodb.scala.bson.collection.immutable.Document
 import sun.misc.IOUtils
 import web.ImageDownloader.DownloadImage
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 object ImageDownloader {
 
@@ -22,20 +18,23 @@ object ImageDownloader {
 
 class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging {
 
-   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
-
    override def receive = {
       case DownloadImage(document) =>
-         getProductImageBytes(document).onComplete {
-            case Failure(exception) => log.error(exception, "Error downloading image")
-            case Success(bytes) => imageCoderActor ! ImageCoder.DecodeImage(document -> bytes)
-         }
+         val bytes = getProductImageBytes(document)
+         if (bytes.nonEmpty)
+            imageCoderActor ! ImageCoder.DecodeImage(document -> bytes)
+         else
+            log.info(s"No image downloaded for product $document")
+
       case _ => throw new RuntimeException("Unknown type of operation")
    }
 
-   def getProductImageBytes(document: Document): Future[Array[Byte]] = {
+   def getProductImageBytes(document: Document): Array[Byte] = {
       val url = getUrl(document)
-      download(url)
+      if (url.nonEmpty)
+         download(url)
+      else
+         Array.emptyByteArray
    }
 
    private def getUrl(document: Document) = {
@@ -46,13 +45,14 @@ class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging
       val images = getImagesArray(document)
 
       shopName.toLowerCase match {
-         case "zara" => "http:"+images.last
-         case "h&m" => "http:"+images(images.length-2)
+         case "zara" => "http:" + images.last
+         case "h&m" if images.length > 2 => "http:" + images(images.length - 2)
+         case _ => ""
       }
    }
 
    private def getImagesArray(document: Document): Array[String] = {
-      if (document("images").isArray) {
+      if (document.containsKey("images") && document("images").isArray) {
          val imagesBsonArray = document("images").asArray()
          if (imagesBsonArray.isEmpty)
             throw new RuntimeException("Image array must not be empty")
@@ -63,14 +63,14 @@ class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging
             imagesStringArray(i) = imagesBsonArray.get(i).asString().getValue
          }
          if (imagesStringArray.isEmpty)
-            throw new RuntimeException("imagesStringArray must not be empty")
+            throw new RuntimeException("ImagesStringArray must not be empty")
          imagesStringArray
       } else {
-         throw new RuntimeException("Product must contain images")
+         throw new RuntimeException(s"Product must contain images : $document")
       }
    }
 
-   private def download(url: String) = Future {
+   private def download(url: String) = {
       if (url.isEmpty)
          Array.emptyByteArray
       else {

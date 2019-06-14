@@ -31,7 +31,6 @@ object Main {
       })
 
       //
-      downloaderActor ! ImageDownloader.DownloadImage(Document("""{"shopName":"zara"}"""))
       //
 
       //      val result = getGradient2(src)

@@ -1,15 +1,14 @@
-package image
+package actors.image
 
+import actors.web.ImageUploader
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.opencv.core.{Core, Mat, MatOfByte}
+import org.opencv.core.{Mat, MatOfByte}
 import org.opencv.imgcodecs.Imgcodecs
-import web.ImageUploader
 
 object ImageCoder {
 
-   def props(imageProcessorActor: ActorRef, uploaderActor: ActorRef): Props
-   = Props(new ImageCoder(imageProcessorActor, uploaderActor))
+   def props(): Props = Props(new ImageCoder())
 
    final case class DecodeImage(documentWithSource: (Document, Array[Byte]))
 
@@ -17,7 +16,15 @@ object ImageCoder {
 
 }
 
-class ImageCoder(imageProcessorActor: ActorRef, uploaderActor: ActorRef) extends Actor with ActorLogging {
+class ImageCoder extends Actor with ActorLogging {
+
+   var uploaderActor: ActorRef = Actor.noSender
+   var imageProcessorActor: ActorRef = Actor.noSender
+
+   override def preStart() = {
+      imageProcessorActor = context.actorOf(ImageProcessor.props(),"image-processor-actor")
+      uploaderActor = context.actorOf(ImageUploader.props(),"image-uploader-actor")
+   }
 
    override def receive = {
       case ImageCoder.DecodeImage((document, source)) =>
@@ -29,16 +36,16 @@ class ImageCoder(imageProcessorActor: ActorRef, uploaderActor: ActorRef) extends
    }
 
    private def decodeImage(bytes: Array[Byte]): Mat = {
-      log.info("Starting image decoding")
+      log.info("Starting actors.image decoding")
       val image = Imgcodecs.imdecode(new MatOfByte(bytes: _*), Imgcodecs.IMREAD_ANYCOLOR)
       log.info(s"Image decoding finished. Image size: ${image.size()}")
       image
    }
 
    private def encodeImage(mat: Mat): Array[Byte] = {
-      log.info("Starting image encoding")
+      log.info("Starting actors.image encoding")
       val matOfByte = new MatOfByte()
-      Imgcodecs.imencode(".png",mat,matOfByte)
+      Imgcodecs.imencode(".png", mat, matOfByte)
       val bytes = matOfByte.toArray
       log.info(s"Image encoding finished. MatOfByte size: ${matOfByte.size()}; Bytes length: ${bytes.length}")
       bytes

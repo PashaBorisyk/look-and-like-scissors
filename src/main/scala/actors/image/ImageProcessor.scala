@@ -1,4 +1,4 @@
-package image
+package actors.image
 
 import java.util
 
@@ -28,7 +28,7 @@ class ImageProcessor() extends Actor with ActorLogging {
    }
 
    private def processFilter(src: Mat): Mat = {
-      log.info("Starting image processing")
+      log.info("Starting actors.image processing")
       val alphaMask = getGradient(src)
       //      performMorphologyEx(alphaMask, Imgproc.MORPH_DILATE, 1)
       Imgproc.floodFill(

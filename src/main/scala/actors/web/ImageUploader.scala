@@ -1,4 +1,4 @@
-package web
+package actors.web
 
 import java.io.FileOutputStream
 
@@ -23,9 +23,9 @@ class ImageUploader extends Actor with ActorLogging {
    }
 
    def upload(source: Array[Byte]): String = {
-      log.info("Starting image upload")
+      log.info("Starting actors.image upload")
 
-      val fileOutputStream = new FileOutputStream(s"./img/some$i.png")
+      val fileOutputStream = new FileOutputStream(s"./img/some.png")
       fileOutputStream.write(source)
       fileOutputStream.flush()
       fileOutputStream.close()

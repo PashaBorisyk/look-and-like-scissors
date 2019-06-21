@@ -1,22 +1,28 @@
-package web
+package actors.web
 
 import java.net.URL
 
+import actors.image.ImageCoder
+import actors.web.ImageDownloader.DownloadImage
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import image.ImageCoder
 import org.mongodb.scala.bson.collection.immutable.Document
 import sun.misc.IOUtils
-import web.ImageDownloader.DownloadImage
 
 object ImageDownloader {
 
-   def props(imageCoderActor: ActorRef) = Props(new ImageDownloader(imageCoderActor))
+   def props() = Props(new ImageDownloader())
 
    final case class DownloadImage(document: Document)
 
 }
 
-class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging {
+class ImageDownloader() extends Actor with ActorLogging {
+
+   var imageCoderActor: ActorRef = Actor.noSender
+
+   override def preStart() = {
+      imageCoderActor = context.actorOf(ImageCoder.props(), "image-coder-actor")
+   }
 
    override def receive = {
       case DownloadImage(document) =>
@@ -24,7 +30,7 @@ class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging
          if (bytes.nonEmpty)
             imageCoderActor ! ImageCoder.DecodeImage(document -> bytes)
          else
-            log.info(s"No image downloaded for product $document")
+            log.info(s"No actors.image downloaded for product $document")
 
       case _ => throw new RuntimeException("Unknown type of operation")
    }
@@ -38,8 +44,9 @@ class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging
    }
 
    private def getUrl(document: Document) = {
-      val shopName = if (document("shopName").isString)
-         document("shopName").asString().getValue
+      val data = document("data").asDocument
+      val shopName = if (data.get("shopName").isString)
+         data.get("shopName").asString().getValue
       else throw new RuntimeException("Product must contain shopName field as String type")
 
       val images = getImagesArray(document)
@@ -74,7 +81,7 @@ class ImageDownloader(imageCoderActor: ActorRef) extends Actor with ActorLogging
       if (url.isEmpty)
          Array.emptyByteArray
       else {
-         log.info(s"Starting image download. Url: $url")
+         log.info(s"Starting actors.image download. Url: $url")
          val urlObj = new URL(url)
          val imageInBytes = IOUtils.readFully(urlObj.openStream(), Int.MaxValue, false)
          log.info(s"Image successfully downloaded. Image size in bytes: ${imageInBytes.size}")

@@ -1,24 +1,62 @@
 
-import actors.queue.KafkaConsumer
-import actors.web.ImageDownloader
 import akka.actor.ActorSystem
+import mongo.MongoClientConnection
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.opencv.core._
+import queue.KafkaConsumer
+import web.actors.ImageDownloader
 
 object Main {
 
+   val actorSystem = ActorSystem("image-processing-system")
+   val imageDownloader = actorSystem.actorOf(ImageDownloader.props(), "image-downloader-actor")
+
    def main(args: Array[String]): Unit = {
+
       loadOpenCV_Lib()
       println("Creating actor system")
-      val actorSystem = ActorSystem("image-processing-system")
       println("Actor system created and started")
 
-      val downloaderActor = actorSystem.actorOf(ImageDownloader.props(), "downloader-actor")
       val kafkaConsumer = KafkaConsumer(actorSystem)
       kafkaConsumer.startConsuming { doc =>
-         downloaderActor ! ImageDownloader.DownloadImage(doc)
+         imageDownloader ! ImageDownloader.DownloadImage(doc)
       }
+
+      MongoClientConnection.documentsCount.subscribe((count:Long) => attachBGImages(20,count,0),(error:Throwable) =>
+         error.printStackTrace())
+
    }
 
+   def attachBGImages(limit:Long,total:Long,done:Int): Unit = {
+
+      println(s"New iteration started: limit: $limit; total: $total; done: $done")
+
+      if (total <= done)
+         return
+
+      val numberOfDocuments = if (total - done > limit) limit else total - done
+
+      var doneInThisSession = 0
+
+      MongoClientConnection.findWithoutBGImage(limit).subscribe((doc: Document) => {
+         imageDownloader ! ImageDownloader.DownloadImage(doc)
+         doneInThisSession += 1
+      }, (error: Throwable) => {
+         error.printStackTrace()
+      },() => attachBGImages(numberOfDocuments,total,done+doneInThisSession))
+   }
+
+   def testFunc(actorSystem: ActorSystem): Unit = {
+
+
+
+
+      MongoClientConnection.findByImageURL("https://lookandlikeimages.blob.core.windows.net/images/Dsy0vcINTIV1evKPs2F1AtF7W5aUR6QsbUwnfX8qdGTqSkTaoIt1vxNwbTSw.png").subscribe((doc: Document) => {
+         println(doc)
+      }, (error: Throwable) => {
+         error.printStackTrace()
+      })
+   }
 
    @throws[Exception]
    def loadOpenCV_Lib() = { // get the model

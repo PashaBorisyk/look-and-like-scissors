@@ -49,7 +49,7 @@ class ImageCoder extends Actor with ActorLogging {
       imagesSources.map { case (url, source) =>
          val sourceImage = Imgcodecs.imdecode(new MatOfByte(source: _*), Imgcodecs.IMREAD_ANYCOLOR)
          val resizedImage = resizeImage(sourceImage)
-         sourceImage.release()
+         sourceImage
          url -> resizedImage
       }
    }
@@ -82,8 +82,8 @@ class ImageCoder extends Actor with ActorLogging {
       }; Bytes length: ${
          bytes.length
       }")
-      matOfByte.release()
-      mat.release()
+      matOfByte
+      mat
       bytes
    }
 

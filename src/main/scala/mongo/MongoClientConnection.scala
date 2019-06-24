@@ -10,7 +10,7 @@ import scala.concurrent.{Future, Promise}
 
 object MongoClientConnection {
 
-   private val mongoClient = MongoClient("")
+   private val mongoClient = MongoClient("mongodb://look-and-like-test:unE8DZr3T7yA6SLDPjknaT8Bj0MzLD4O4604EDq0OE44Lv9BxAslwWXTqLvJFzvqLCBoCDshGgUUJuKoahpT6w==@look-and-like-test.documents.azure.com:10255/?ssl=true&replicaSet=globaldb")
    private val productDatabase = mongoClient.getDatabase("look-and-like-test")
    private val collection: MongoCollection[Document] = productDatabase.getCollection("products")
 

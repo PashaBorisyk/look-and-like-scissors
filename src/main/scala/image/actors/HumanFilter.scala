@@ -76,11 +76,9 @@ class HumanFilter(backgroundRemoverActor: ActorRef) extends Actor with ActorLogg
             //               0, 0))
          }
       }
-      detection.release()
       if (!(labelConfidence.contains("person") && labelConfidence("person") > 0.99)) {
          Some(image)
       } else{
-         image.release()
          None
       }
    }

@@ -61,8 +61,6 @@ class BackgroundRemover() extends Actor with ActorLogging {
 
       val dst = new Mat()
       addAlphaChannel(src, dst, alphaMask)
-      src.release()
-      alphaMask.release()
       log.info("Image processing finished")
       dst
    }

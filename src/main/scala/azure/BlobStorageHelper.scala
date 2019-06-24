@@ -10,8 +10,8 @@ import util.Util
 
 object BlobStorageHelper {
 
-   private final val accountName = ""
-   private final val accountKey = ""
+   private final val accountName = "lookandlikeimages"
+   private final val accountKey = "jTAH1zNIW+tTUOdqnMJG3MewoJD0XMWHT4Rbi7qx0c6CXnyocCRlKLmFeC0BWHQhig7cE8Fes3L1kII2cr8lWw=="
 
    private final val credential = new SharedKeyCredentials(accountName, accountKey)
    private final val pipeLine = StorageURL.createPipeline(credential, new PipelineOptions)

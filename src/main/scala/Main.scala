@@ -3,12 +3,12 @@ import akka.actor.ActorSystem
 import mongo.MongoClientConnection
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.opencv.core._
-import queue.KafkaConsumer
+import queue.KafkaClient
 import web.actors.ImageDownloader
 
 object Main {
 
-   val actorSystem = ActorSystem("image-processing-system")
+   implicit val actorSystem: ActorSystem = ActorSystem("image-processing-system")
    val imageDownloader = actorSystem.actorOf(ImageDownloader.props(), "image-downloader-actor")
 
    def main(args: Array[String]): Unit = {
@@ -17,17 +17,19 @@ object Main {
       println("Creating actor system")
       println("Actor system created and started")
 
-      val kafkaConsumer = KafkaConsumer(actorSystem)
-      kafkaConsumer.startConsuming { doc =>
+      val kafkaClientActor = actorSystem.actorOf(KafkaClient.props({ doc =>
          imageDownloader ! ImageDownloader.DownloadImage(doc)
-      }
+      }), "kafka-client")
 
-      MongoClientConnection.documentsCount.subscribe((count:Long) => attachBGImages(20,count,0),(error:Throwable) =>
-         error.printStackTrace())
+
+//      MongoClientConnection.documentsCount.subscribe(
+//         (count: Long) =>
+//            attachBGImages(20, count, 0), (error: Throwable) => error.printStackTrace()
+//      )
 
    }
 
-   def attachBGImages(limit:Long,total:Long,done:Int): Unit = {
+   def attachBGImages(limit: Long, total: Long, done: Int): Unit = {
 
       println(s"New iteration started: limit: $limit; total: $total; done: $done")
 
@@ -43,12 +45,10 @@ object Main {
          doneInThisSession += 1
       }, (error: Throwable) => {
          error.printStackTrace()
-      },() => attachBGImages(numberOfDocuments,total,done+doneInThisSession))
+      }, () => attachBGImages(numberOfDocuments, total, done + doneInThisSession))
    }
 
    def testFunc(actorSystem: ActorSystem): Unit = {
-
-
 
 
       MongoClientConnection.findByImageURL("https://lookandlikeimages.blob.core.windows.net/images/Dsy0vcINTIV1evKPs2F1AtF7W5aUR6QsbUwnfX8qdGTqSkTaoIt1vxNwbTSw.png").subscribe((doc: Document) => {

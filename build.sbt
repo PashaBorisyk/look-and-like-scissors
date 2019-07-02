@@ -1,8 +1,11 @@
 name := "look-and-like-scissors"
 
 version := "0.1"
+enablePlugins(JavaAppPackaging)
 
-scalaVersion := "2.12.0"
+ThisBuild / scalaVersion := "2.12.7"
+ThisBuild / organization := "com.example"
+
 
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.6.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.5.23"
@@ -14,3 +17,4 @@ libraryDependencies += "io.reactivex.rxjava2" % "rxjava" % "2.2.10"
 libraryDependencies += "com.microsoft.azure" % "azure-client-runtime" % "1.6.9"
 libraryDependencies += "com.microsoft.azure" % "azure-client-authentication" % "1.6.9"
 libraryDependencies += "com.microsoft.rest.v2" % "client-runtime" % "2.0.0"
+

@@ -13,7 +13,7 @@ object Main {
 
    def main(args: Array[String]): Unit = {
 
-      loadOpenCV_Lib()
+      loadOpenCV_Lib(args)
       println("Creating actor system")
       println("Actor system created and started")
 
@@ -22,10 +22,10 @@ object Main {
       }), "kafka-client")
 
 
-//      MongoClientConnection.documentsCount.subscribe(
-//         (count: Long) =>
-//            attachBGImages(20, count, 0), (error: Throwable) => error.printStackTrace()
-//      )
+      //      MongoClientConnection.documentsCount.subscribe(
+      //         (count: Long) =>
+      //            attachBGImages(20, count, 0), (error: Throwable) => error.printStackTrace()
+      //      )
 
    }
 
@@ -59,12 +59,14 @@ object Main {
    }
 
    @throws[Exception]
-   def loadOpenCV_Lib() = { // get the model
+   def loadOpenCV_Lib(args: Array[String]) = { // get the model
       val model = System.getProperty("sun.arch.data.model")
+      var libraryPath = System.getProperty("opencv.path")
       // the path the .dll lib location
-      var libraryPath = "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x86"
+      // "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x64"
+      println("OpenCV library path: "+libraryPath)
       // check for if system is 64 or 32
-      if (model == "64") libraryPath = "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x64"
+      libraryPath += (if (model == "64") "/x64" else "/x32")
       // set the path
       System.setProperty("java.library.path", libraryPath)
       val sysPath = classOf[ClassLoader].getDeclaredField("sys_paths")

@@ -8,8 +8,8 @@ import org.opencv.imgproc.Imgproc
 
 object HumanFilter {
 
-   private final val PROTO_TXT = "./resources/prototxt.txt"
-   private final val MODEL = "./resources/model.caffemodel"
+   private final val PROTO_TXT = "/app/resources/prototxt.txt"
+   private final val MODEL = "/app/resources/model.caffemodel"
    private final val THRESHOLD = 0.2
    private final val NET = Dnn.readNetFromCaffe(PROTO_TXT, MODEL)
 

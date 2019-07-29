@@ -1,10 +1,13 @@
 
+import java.io.File
+
 import akka.actor.ActorSystem
 import mongo.MongoClientConnection
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.opencv.core._
 import queue.KafkaClient
 import web.actors.ImageDownloader
+import org.apache.commons.lang3.SystemUtils
 
 object Main {
 
@@ -60,19 +63,28 @@ object Main {
 
    @throws[Exception]
    def loadOpenCV_Lib(args: Array[String]) = { // get the model
-      val model = System.getProperty("sun.arch.data.model")
-      var libraryPath = System.getProperty("opencv.path")
-      // the path the .dll lib location
-      // "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x64"
-      println("OpenCV library path: "+libraryPath)
-      // check for if system is 64 or 32
-      libraryPath += (if (model == "64") "/x64" else "/x32")
-      // set the path
-      System.setProperty("java.library.path", libraryPath)
-      val sysPath = classOf[ClassLoader].getDeclaredField("sys_paths")
-      sysPath.setAccessible(true)
-      sysPath.set(null, null)
-      // load the lib
-      System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+
+      if (SystemUtils.IS_OS_WINDOWS) {
+         val model = System.getProperty("sun.arch.data.model")
+         var libraryPath = System.getProperty("opencv.path")
+         // the path the .dll lib location
+         // "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x64"
+         println("OpenCV library path: "+libraryPath)
+         // check for if system is 64 or 32
+         libraryPath += (if (model == "64") "/x64" else "/x32")
+         // set the path
+         System.setProperty("java.library.path", libraryPath)
+         val sysPath = classOf[ClassLoader].getDeclaredField("sys_paths")
+         sysPath.setAccessible(true)
+         sysPath.set(null, null)
+         // load the lib
+         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+
+      }
+      else if (SystemUtils.IS_OS_LINUX) {
+        val libPath = new File("/app/lib/".concat("libopencv_java411.so")).getAbsolutePath
+        println(s"Loading opencv library from path: $libPath")
+         System.load(libPath)
+      }
    }
 }

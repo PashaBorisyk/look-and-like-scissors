@@ -5,7 +5,7 @@ import java.net.URL
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import image.actors.ImageCoder
 import org.mongodb.scala.bson.collection.immutable.Document
-import sun.misc.IOUtils
+import org.apache.commons.compress.utils.IOUtils
 import util.Util
 
 object ImageDownloader {
@@ -80,7 +80,7 @@ class ImageDownloader() extends Actor with ActorLogging {
       else {
          log.info(s"Starting image download. Url: $url")
          val urlObj = new URL(url)
-         val imageInBytes = IOUtils.readFully(urlObj.openStream(), Int.MaxValue, false)
+         val imageInBytes = IOUtils.toByteArray(urlObj.openStream())
          log.info(s"Image successfully downloaded. Image size in bytes: ${imageInBytes.size}")
          imageInBytes
       }

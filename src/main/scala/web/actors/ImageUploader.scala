@@ -31,23 +31,15 @@ class ImageUploader extends Actor with ActorLogging {
 
    }
 
-
-   var s = 1
-
    def upload(document: Document, source: Array[Byte]): Unit = {
       log.info("Starting image upload")
-      s += 1
-      val fileOutputStream = new FileOutputStream(s"./img/some$s.png")
-      fileOutputStream.write(source)
-      fileOutputStream.flush()
-      fileOutputStream.close()
+      val result = BlobStorageHelper.upload(source).blockingGet()
       log.info("Image upload finished")
       log.info("============================================================")
-      val result = BlobStorageHelper.upload(source).blockingGet()
       if (result.statusCode() == 201) {
          val id = document("_id").asObjectId()
          val imageURL = result.request().url().toExternalForm
-         MongoClientConnection.update(id, imageURL).subscribe(
+         MongoClientConnection.setNoBGImageUrlForDocument(id, imageURL).subscribe(
             (error: Throwable) => {
                error.printStackTrace()
                log.error(error, s"Document with id $id was not updated")

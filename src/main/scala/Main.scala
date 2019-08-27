@@ -25,10 +25,10 @@ object Main {
       }), "kafka-client")
 
 
-      //      MongoClientConnection.documentsCount.subscribe(
-      //         (count: Long) =>
-      //            attachBGImages(20, count, 0), (error: Throwable) => error.printStackTrace()
-      //      )
+      MongoClientConnection.documentsCount.subscribe(
+         (count: Long) =>
+            attachBGImages(10, count, 0), (error: Throwable) => error.printStackTrace()
+      )
 
    }
 
@@ -44,6 +44,7 @@ object Main {
       var doneInThisSession = 0
 
       MongoClientConnection.findWithoutBGImage(limit).subscribe((doc: Document) => {
+        MongoClientConnection.setIsProcessing(doc("_id").asObjectId(),isProcessing = true)
          imageDownloader ! ImageDownloader.DownloadImage(doc)
          doneInThisSession += 1
       }, (error: Throwable) => {
@@ -52,7 +53,6 @@ object Main {
    }
 
    def testFunc(actorSystem: ActorSystem): Unit = {
-
 
       MongoClientConnection.findByImageURL("https://lookandlikeimages.blob.core.windows.net/images/Dsy0vcINTIV1evKPs2F1AtF7W5aUR6QsbUwnfX8qdGTqSkTaoIt1vxNwbTSw.png").subscribe((doc: Document) => {
          println(doc)
@@ -66,24 +66,25 @@ object Main {
 
       if (SystemUtils.IS_OS_WINDOWS) {
          val model = System.getProperty("sun.arch.data.model")
-         var libraryPath = System.getProperty("opencv.path")
+         //         var libraryPath = System.getProperty("opencv.path")
+         var libraryPath = "C:/opencv/build/java"
          // the path the .dll lib location
          // "C:/Users/pavel.borissiouk/Downloads/opencv/build/java/x64"
-         println("OpenCV library path: "+libraryPath)
+         println("OpenCV library path: " + libraryPath)
          // check for if system is 64 or 32
-         libraryPath += (if (model == "64") "/x64" else "/x32")
+         libraryPath += (if (model == "64") "/x64/" else "/x32/")
          // set the path
          System.setProperty("java.library.path", libraryPath)
-         val sysPath = classOf[ClassLoader].getDeclaredField("sys_paths")
-         sysPath.setAccessible(true)
-         sysPath.set(null, null)
+         //         val sysPath = classOf[ClassLoader].getDeclaredField("sys_paths")
+         //         sysPath.setAccessible(true)
+         //         sysPath.set(null, null)
          // load the lib
          System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
 
       }
       else if (SystemUtils.IS_OS_LINUX) {
-        val libPath = new File("/app/lib/".concat("libopencv_java411.so")).getAbsolutePath
-        println(s"Loading opencv library from path: $libPath")
+         val libPath = new File("/app/lib/".concat("libopencv_java411.so")).getAbsolutePath
+         println(s"Loading opencv library from path: $libPath")
          System.load(libPath)
       }
    }

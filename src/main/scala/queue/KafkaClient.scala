@@ -34,7 +34,8 @@ class KafkaClient(onDocumentFound: Document => Unit) extends Actor with ActorLog
    implicit private final val actorMaterializer: ActorMaterializer = ActorMaterializer()
    implicit private final val ec: ExecutionContext = context.dispatcher
 
-   private final val bootstrapServers = "localhost:9092"
+   private final val bootstrapServers = System.getenv("KAFKA_SERVER_URL")
+   log.info(s"KAFKA_SERVER_URL ENV Variable : $bootstrapServers ")
    private final val consumerTopic = "inserted_documents_ids"
    private final val producerTopic = "ready_to_index_id"
    private final val group =  "akka_streams_group"

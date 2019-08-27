@@ -19,7 +19,6 @@ object MongoClientConnection {
 
    private final val updateDateFromat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
 
-
    def getByIDString(id: String): Future[Document] = {
       val promise = Promise[Document]
       collection
@@ -27,7 +26,7 @@ object MongoClientConnection {
             and(
                equal("_id", BsonObjectId(id)),
                or(
-                  equal("data.images.noBackgroundImageUrl", null),
+                  equal("metaInformation.indexed", null),
                   equal("data.images.noBackgroundImageUrl", "")
                )
             )
@@ -42,16 +41,32 @@ object MongoClientConnection {
       promise.future
    }
 
-   def update(id: BsonObjectId, imageWithoutBgURL: String) =
+   def setNoBGImageUrlForDocument(id: BsonObjectId, imageWithoutBgURL: String) =
       collection.updateOne(equal("_id", id), Updates.combine(
          Updates.set("data.images.noBackgroundImageUrl", imageWithoutBgURL),
-         Updates.set("metaInformation.updatedAt", updateDateFromat.format(new Date()))
+         Updates.set("metaInformation.updatedAt", updateDateFromat.format(new Date())),
+         Updates.set("metaInformation.isProcessing", false)
       ))
 
+   def setIsProcessing(id: BsonObjectId, isProcessing: Boolean) = collection.updateMany(
+      equal("_id", id), Updates.combine(
+         Updates.set("metaInformation.isProcessing", isProcessing)
+      )
+   )
 
-   def findWithoutBGImage(limit: Long) = collection.find(or(
-      equal("data.images.noBackgroundImageUrl", null),
-      equal("data.images.noBackgroundImageUrl", "")
+   def findWithoutBGImage(limit: Long) = collection.find(and(
+      or(
+         equal("metaInformation.indexed", null),
+         equal("metaInformation.indexed", false)
+      ),
+      or(
+         equal("data.images.noBackgroundImageUrl", ""),
+         equal("data.images.noBackgroundImageUrl", null),
+      ),
+      or(
+         equal("metaInformation.isProcessing", null),
+         equal("metaInformation.isProcessing", false)
+      )
    )).limit(limit.toInt)
 
    def findByImageURL(url: String) =
